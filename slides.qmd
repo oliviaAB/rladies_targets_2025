@@ -1,0 +1,133 @@
+---
+title: "Presentation title"
+institute: "The New Zealand Institute for Plant and Food Research Ltd"
+author: "Jane Doe"
+date: "01 January 2024"
+date-format: "D MMMM YYYY"
+format: 
+  revealjs:
+    theme: [default, pfr_theme.scss]
+    embed-resources: true
+    smaller: true
+    logo: images/pfr_logo_short.png
+    slide-number: true
+    auto-stretch: false
+    width: 1200
+execute:
+  echo: true
+  eval: false
+title-slide-attributes: 
+  data-background-image: images/pfr_logo.png
+  data-background-size: 17%
+  data-background-position: 98% 4%
+include-after: |
+  <script type="text/javascript">
+    Reveal.on('ready', event => {
+      if (event.indexh === 0) {
+        document.querySelector("div.has-logo > img.slide-logo").style.display = "none";
+      }
+    });
+    Reveal.addEventListener('slidechanged', (event) => {
+      if (event.indexh === 0) {
+        Reveal.configure({ slideNumber: null });
+        document.querySelector("div.has-logo > img.slide-logo").style.display = "none";
+      }
+      if (event.indexh === 1) { 
+        Reveal.configure({ slideNumber: 'c/t' });
+        document.querySelector("div.has-logo > img.slide-logo").style.display = null;
+      }
+    });
+  </script>
+long-version: true
+---
+
+```{r setup}
+#| eval: true
+#| include: false
+
+library(ggplot2)
+```
+
+## Slide example
+
+Presentation about the `{moiraine}` package, documentation available at <https://plant-food-research-open.github.io/moiraine-manual/>.
+
+## Slide with two columns vertically centered
+
+:::: {.columns .v-center-container}
+
+::: {.column width="50%"}
+- Some
+
+- bullet
+
+- points
+:::
+
+::: {.column width="50%"}
+![](images/pfr_logo.png){width=90% fig-align="center"}
+:::
+
+::::
+
+# Thank you for your attention!
+
+[firstname.lastname\@plantandfood.co.nz](mailto:firstname.lastname@plantandfood.co.nz)
+
+## Presentation disclaimer {visibility="uncounted"}
+
+:::: columns
+
+::: {.column width="60%"}
+
+::: {style="font-size: 55%;"}
+
+**Presentation for**
+<br>Event, location, Country, Event date
+
+**Publication data:**
+<br>Authors month year. Presentation title. SPTS No. XXXXX. 
+
+**Presentation prepared by:**
+<br>Author name
+<br>Scientist, Group
+<br>Month Year
+
+**Presentation approved by:**
+<br>SGL
+<br>Science Group Leader, Group
+<br>Month Year
+
+**For more information contact:**
+<br>Author name
+<br>DDI: +64 X XXX XXXX
+<br>Email: firstname.lastname@plantandfood.co.nz
+:::
+
+\ 
+
+::: {style="font-size: 40%;"}
+This report has been prepared by The New Zealand Institute for Plant and Food Research Limited (Plant & Food Research).
+<br>Head Office: 120 Mt Albert Road, Sandringham, Auckland 1025, New Zealand, Tel: +64 9 925 7000, Fax: +64 9 925 7001.
+<br>www.plantandfood.co.nz
+:::
+:::
+
+::: {.column width="40%"}
+::: {style="background: #ECF0EF;"}
+::: {style="font-size: 40%; margin: 30px;"}
+\ 
+
+#### DISCLAIMER
+The New Zealand Institute for Plant and Food Research Limited does not give any prediction, warranty or assurance in relation to the accuracy of or fitness for any particular use or application of, any information or scientific or other result contained in this presentation. Neither The New Zealand Institute for Plant and Food Research Limited nor any of its employees, students, contractors, subcontractors or agents shall be liable for any cost (including legal costs), claim, liability, loss, damage, injury or the like, which may be suffered or incurred as a direct or indirect result of the reliance by any person on any information contained in this presentation.
+
+#### COPYRIGHT
+© COPYRIGHT (202X) The New Zealand Institute for Plant and Food Research Limited. All Rights Reserved. No part of this report may be reproduced, stored in a retrieval system, transmitted, reported, or copied in any form or by any means electronic, mechanical or otherwise, without the prior written permission of The New Zealand Institute for Plant and Food Research Limited. Information contained in this report is confidential and is not to be disclosed in any form to any party without the prior approval in writing of The New Zealand Institute for Plant and Food Research Limited. To request permission, write to: The Science Publication Office, The New Zealand Institute for Plant and Food Research Limited – Postal Address: Private Bag 92169, Victoria Street West, Auckland 1142, New Zealand; Email: [SPO-Team@plantandfood.co.nz](mailto:SPO-Team@plantandfood.co.nz).
+
+\ 
+
+:::
+:::
+:::
+
+::::
