@@ -1,0 +1,947 @@
+---
+title: "Reproducible analysis pipelines with `{targets}`"
+institute: "The New Zealand Institute for Plant and Food Research Ltd"
+author: "Olivia Angelin-Bonnet"
+date: "07 April 2025"
+date-format: "D MMMM YYYY"
+from: markdown+emoji
+format: 
+  revealjs:
+    theme: [default, pfr_theme.scss]
+    embed-resources: true
+    smaller: true
+    logo: images/pfr_logo_short.png
+    slide-number: true
+    auto-stretch: false
+    code-line-numbers: false
+    pdf-separate-fragments: true
+execute:
+  echo: true
+  eval: false
+title-slide-attributes: 
+  data-background-image: images/pfr_logo.png
+  data-background-size: 17%
+  data-background-position: 98% 4%
+include-after: |
+  <script type="text/javascript">
+    Reveal.on('ready', event => {
+      if (event.indexh === 0) {
+        document.querySelector("div.has-logo > img.slide-logo").style.display = "none";
+      }
+    });
+    Reveal.addEventListener('slidechanged', (event) => {
+      if (event.indexh === 0) {
+        Reveal.configure({ slideNumber: null });
+        document.querySelector("div.has-logo > img.slide-logo").style.display = "none";
+      }
+      if (event.indexh === 1) { 
+        Reveal.configure({ slideNumber: 'c/t' });
+        document.querySelector("div.has-logo > img.slide-logo").style.display = null;
+      }
+    });
+  </script>
+long-version: true
+---
+
+```{r setup}
+#| eval: true
+#| include: false
+
+library(ggplot2)
+```
+
+
+## Hi! I'm Olivia :)
+
+:::: {.columns .v-center-container}
+
+::: {.column width="55%"}
+![Location of Le Pont-de-Beauvoisin on a map of France](images/map_france.png){fig-align="center"}
+
+:::
+
+::: {.column width="45%"}
+
+::: {.fragment}
+![Location of Palmerston North on a map of New Zealand](images/map_nz.png){fig-align="center"}
+:::
+:::
+
+::::
+
+
+## Hi! I'm Olivia :)
+
+
+Statistical scientist at Plant & Food Research, working on omics analyses and multi-omics integration
+
+::: columns
+::: {.column width="33%"}
+<p style="text-align: center;"><b>Multivariate analyses</b></p>
+
+![](images/pca.png){fig-align="center" height=340px}
+:::
+
+::: {.column width="40%"}
+<p style="text-align: center;"><b>Visualisations</b></p>
+
+![](images/heatmap.png){fig-align="center" height=340px} 
+:::
+
+::: {.column width="27%"}
+<p style="text-align: center;"><b>R packages</b></p>
+
+![](images/r_packages.png){fig-align="center" height=340px} 
+:::
+:::
+
+## Developing complex analyses in R
+
+![Schema of the analysis for one of my thesis chapters](images/complex_analysis_workflow.png){fig-align="center" width="657"}
+
+## Developing complex analyses in R
+
+::: {.columns .v-center-container}
+::: {.column width="50%"}
+
+Project folder:
+
+```{txt}
+#| code-line-numbers: false
+
+thesis/chapter4_code 
+├── genomics_data_analysis
+│   ├── 00_genomics_wrangling.Rmd
+│   ├── 01_genomics_filtering.Rmd
+│   └── 02_genomics_eda.Rmd
+└── transcriptomics_data_analysis
+|   ├── 00_transcriptomics_wrangling.Rmd
+|   ├── 01_transcriptomics_normalisation.Rmd
+|   ├── 02_transcriptomics_diff_expr.Rmd
+|   └── 03_transcriptomics_wgcna.Rmd
+...
+```
+:::
+
+::: {.column width="50%"}
+::: incremental
+-   Input data has changed; what do I need to re-run?
+
+-   In which order do I need to run these scripts?
+
+-   I want to change one line of text in my report, how long will it take to re-generate the output?
+:::
+:::
+:::
+
+## Developing complex analyses in R
+
+::: {.callout-tip appearance="simple"}
+
+Solution: Turn your scripts into pipelines with `{targets}`!
+
+:::
+
+::: columns
+
+::: {.column width="40%"}
+
+![](images/targets.svg){fig-align="center" width=70%}
+
+:::
+
+::: {.column width="60%"}
+
+\ 
+
+\ 
+
+::: {.incremental}
+- automatic detection of steps dependencies
+
+- 1-command execution
+
+- automatic caching
+
+- automatic detection of changes in data and/or code
+:::
+:::
+
+:::
+
+## Learning about `{targets}`
+
+Let's walk through an example!
+
+![Artwork by @allison_horst](images/penguins.png){fig-align="center" width=60%}
+
+`palmerpenguins` dataset: size measurements for three penguin species observed in the Palmer Archipelago (Antarctica)
+
+## Learning about `{targets}`
+
+![<https://books.ropensci.org/targets/>](images/targets_manual.png)
+
+## Aside -- more about setting up R projects
+
+- previous talk: "Setting up a reproducible data analysis project in R--featuring GitHub, `{renv}`, `{targets}` and more"
+- see the [slides](https://nzsa-ecssn-2024-seminar-slides.netlify.app/),  [recording](https://youtu.be/DTpcGgdL-cc), or [blog post](https://olivia-angelin-bonnet.netlify.app/blog/2024-08-20-setting-up-r-project/) :relaxed:
+
+![](images/previous_talk_content.png){fig-align="center" width=60%}
+
+# Let's code!
+
+## I have written some code...
+
+```{r first-script}
+library(tidyverse)
+library(janitor)
+library(ggbeeswarm)
+library(here)
+
+# Reading and cleaning data
+penguins_df <- read_csv(here("data/penguins_raw.csv"), show_col_types = FALSE) |> 
+  clean_names() |> 
+  mutate(
+    species = word(species, 1),
+    year = year(date_egg),
+    sex = str_to_lower(sex),
+    year = as.integer(year),
+    body_mass_g = as.integer(body_mass_g),
+    across(where(is.character), as.factor)
+  ) |> 
+  select(
+    species,
+    island,
+    year,
+    sex,
+    body_mass_g,
+    bill_length_mm = culmen_length_mm,
+    bill_depth_mm = culmen_depth_mm,
+    flipper_length_mm
+  ) |> 
+  drop_na()
+
+## Violin plot of body mass per species and sex
+penguins_df |> 
+  ggplot(aes(x = species, colour = sex, fill = sex, y = body_mass_g)) +
+  geom_violin(alpha = 0.3, scale = "width") +
+  geom_quasirandom(dodge.width = 0.9) +
+  scale_colour_brewer(palette = "Set1") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal()
+
+## Violin plot of flipper length per species and sex
+penguins_df |> 
+  ggplot(aes(x = species, colour = sex, fill = sex, y = flipper_length_mm)) +
+  geom_violin(alpha = 0.3, scale = "width") +
+  geom_quasirandom(dodge.width = 0.9) +
+  scale_colour_brewer(palette = "Set1") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal()
+
+## Scatter plot of bill length vs depth, with species and sex
+penguins_df |> 
+  ggplot(aes(x = bill_length_mm, y = bill_depth_mm, colour = species, shape = sex)) +
+  geom_point() +
+  scale_colour_brewer(palette = "Set2") +
+  theme_minimal()
+```
+
+## I have written some code...
+
+Good start, but often:
+
+::: {.incremental}
+- many more steps in the analysis $\rightarrow$ script becomes long and convoluted
+
+- harder to get an overview of the analysis, and to find things
+
+- don't want to re-run all the code everytime I make a change
+:::
+
+::: {.fragment}
+\ 
+
+Let's turn it into a `{targets}` pipeline!
+
+:::
+
+
+## Step 1: Turn your code into functions
+
+:::: {.columns}
+
+::: {.column width="47%"}
+
+From:
+
+```{r reading-data-script}
+# Reading and cleaning data
+penguins_df <- read_csv(
+  here("data/penguins_raw.csv"), 
+  show_col_types = FALSE
+) |> 
+  clean_names() |> 
+  mutate(
+    species = word(species, 1),
+    year = year(date_egg),
+    sex = str_to_lower(sex),
+    year = as.integer(year),
+    body_mass_g = as.integer(body_mass_g),
+    across(where(is.character), as.factor)
+  ) |> 
+  select(
+    ## all relevant columns
+  ) |> 
+  drop_na()
+```
+
+:::
+
+::: {.column width="53%"}
+::: {.fragment}
+
+To: 
+
+```{r reading-data-function}
+#| code-line-numbers: "1,22|2-21|2"
+
+read_data <- function(file) {
+  readr::read_csv(
+    file, 
+    show_col_types = FALSE
+  ) |> 
+  janitor::clean_names() |> 
+  dplyr::mutate(
+    species = stringr::word(species, 1),
+    year = lubridate::year(date_egg),
+    sex = stringr::str_to_lower(sex),
+    year = as.integer(year),
+    body_mass_g = as.integer(body_mass_g),
+    dplyr::across(
+      dplyr::where(is.character), 
+      as.factor
+    )
+  ) |> 
+  dplyr::select(
+    ## all relevant columns
+  ) |> 
+  tidyr::drop_na()
+}
+```
+:::
+:::
+
+::::
+
+## Step 1: Turn your code into functions
+
+Don't forget to document your functions! (`{roxygen}`-style)
+
+::: {.fragment}
+```{r reading-data-roxygen}
+#' Read and clean data
+#' 
+#' Reads in the penguins data, renames and selects relevant columns. The
+#' following transformations are applied to the data: 
+#' * only keep species common name
+#' * extract observation year
+#' * remove rows with missing values
+#' 
+#' @param file Character, path to the penguins data .csv file.
+#' @returns A tibble.
+read_data <- function(file) {
+  readr::read_csv(file, show_col_types = FALSE) |> 
+  janitor::clean_names() |> 
+  dplyr::mutate(
+    ## modifying columns
+  ) |> 
+  dplyr::select(
+    ## all relevant columns
+  ) |> 
+  tidyr::drop_na()
+}
+```
+:::
+
+## Step 1: Turn your code into functions
+
+Improved script:
+
+:::: {.columns}
+
+::: {.column width="47%"}
+
+```{r helper-functions}
+#| filename: "R/helper_functions.R"
+
+#' Read and clean data
+#' 
+#' ...
+read_data <- function(file) { ... }
+
+#' Violin plot of variable per species and sex
+#' 
+#' ...
+violin_plot <- function(df, yvar) { ... }
+
+#' Scatter plot of bill length vs depth
+#' 
+#' ...
+plot_bill_length_depth <- function(df) { ... }
+```
+
+:::
+
+::: {.column width="53%"}
+
+```{r first-script-functions}
+#| filename: "analysis/first_script.R"
+
+library(here)
+
+source(here("R/helper_functions.R"))
+
+penguins_df <- read_data(
+  here("data/penguins_raw.csv")
+)
+
+body_mass_plot <- violin_plot(
+  penguins_df, 
+  body_mass_g
+)
+
+flipper_length_plot <- violin_plot(
+  penguins_df, 
+  flipper_length_mm
+)
+
+bill_scatterplot <- plot_bill_length_depth(
+  penguins_df
+)
+```
+
+:::
+
+::::
+
+## Step 2: Turn your main script into a `{targets}` pipeline!
+
+From:
+
+```{r reading-data-script-repeated}
+library(here)
+
+source(here("R/helper_functions.R"))
+
+penguins_df <- read_data(here("data/penguins_raw.csv"))
+
+body_mass_plot <- violin_plot(penguins_df, body_mass_g)
+
+flipper_length_plot <- violin_plot(penguins_df, flipper_length_mm)
+
+bill_scatterplot <- plot_bill_length_depth(penguins_df)
+```
+
+## Step 2: Turn your main script into a `{targets}` pipeline!
+
+To:
+
+```{r targets-script}
+#| code-line-numbers: "|1|4|6,16|7-15|9|11|13|7"
+library(targets)
+library(here)
+
+source(here("R/helper_functions.R"))
+
+list(
+  tar_target(penguins_raw_file, here("data/penguins_raw.csv"), format = "file"),
+  
+  tar_target(penguins_df, read_data(penguins_raw_file)),
+
+  tar_target(body_mass_plot, violin_plot(penguins_df, body_mass_g)),
+
+  tar_target(flipper_length_plot, violin_plot(penguins_df, flipper_length_mm)),
+
+  tar_target(bill_scatterplot, plot_bill_length_depth(penguins_df))
+)
+```
+
+
+## Step 2: Turn your main script into a `{targets}` pipeline!
+
+Aside: where should my targets script live?
+
+::: {.incremental}
+- default would be in the `_targets.R` file in the main directory
+
+- to choose a custom folder and file name, need to specify targets configuration:
+:::
+
+::: {.fragment}
+
+In the console, run (from main directory):
+
+```{r tar-config-set}
+targets::tar_config_set(script = "analysis/_targets.R", store = "analysis/_targets")
+```
+
+:::
+
+::: {.fragment}
+
+Will create a `_targets.yaml` file:
+
+```{txt filename="_target.yaml"}
+main:
+  script: analysis/_targets.R
+  store: analysis/_targets
+```
+
+<br>
+
+:::
+
+
+## Visualise your pipeline
+
+In the console, run:
+
+```{r tar-visnetwork}
+targets::tar_visnetwork()
+```
+
+::: {.fragment}
+
+![](images/tar_visnetwork_all_to_run.png){width=60% fig-align="center"}
+
+:::
+
+## Execute your pipeline
+
+In the console, run:
+
+```{r tar-make}
+targets::tar_make()
+```
+
+::: {.fragment}
+```{r tar-make-results}
+#| echo: false
+#| eval: true
+#| message: true
+
+message("
+here() starts at C:/Users/hrpoab/Desktop/GitHub/palmerpenguins_analysis
+> dispatched target penguins_raw_file
+o completed target penguins_raw_file [0 seconds]
+> dispatched target penguins_df
+o completed target penguins_df [0.85 seconds]
+> dispatched target body_mass_plot
+o completed target body_mass_plot [0.16 seconds]
+> dispatched target bill_scatterplot
+o completed target bill_scatterplot [0.02 seconds]
+> dispatched target flipper_length_plot
+o completed target flipper_length_plot [0.02 seconds]
+> ended pipeline [1.31 seconds]
+")
+```
+
+:::
+
+## Get the pipeline results
+
+```{r tar-read}
+targets::tar_read(bill_scatterplot)
+```
+
+::: {.fragment}
+![](images/bill_scatterplot.png){width=65% fig-align="center"}
+:::
+
+## Change in a step {auto-animate=true}
+
+> *Hi Olivia,*
+>
+> *Great work! Just a minor comment, could you change the colours in the bill length/depth scatter-plot? It's hard to see the difference between the species.*
+
+::: {.fragment}
+
+```{r scatterplot-set2}
+#| filename: "R/helper_functions.R"
+
+plot_bill_length_depth <- function(df) {
+  df |> 
+    ggplot2::ggplot(
+      ggplot2::aes(
+        x = bill_length_mm, 
+        y = bill_depth_mm, 
+        colour = species, 
+        shape = sex
+        )
+    ) +
+    ggplot2::geom_point() +
+    ggplot2::scale_colour_brewer(palette = "Set2") +
+    ggplot2::theme_minimal()
+}
+```
+
+:::
+
+## Change in a step {auto-animate=true}
+
+> *Hi Olivia,*
+>
+> *Great work! Just a minor comment, could you change the colours in the bill length/depth scatter-plot? It's hard to see the difference between the species.*
+
+```{r scatterplot-dark2}
+#| filename: "R/helper_functions.R"
+
+plot_bill_length_depth <- function(df) {
+  df |> 
+    ggplot2::ggplot(
+      ggplot2::aes(
+        x = bill_length_mm, 
+        y = bill_depth_mm, 
+        colour = species, 
+        shape = sex
+        )
+    ) +
+    ggplot2::geom_point() +
+    ggplot2::scale_colour_brewer(palette = "Set1") +
+    ggplot2::theme_minimal()
+}
+```
+
+## Change in a step
+
+```{r tar-visnetwork-change-step}
+targets::tar_visnetwork()
+```
+
+![](images/tar_visnetwork_change_step.png){width=60% fig-align="center"}
+
+## Change in a step
+
+```{r tar-make-change-step}
+targets::tar_make()
+```
+
+```{r tar-make-results-change-steps}
+#| echo: false
+#| eval: true
+#| message: true
+
+message("
+here() starts at C:/Users/hrpoab/Desktop/GitHub/palmerpenguins_analysis
+v skipped target penguins_raw_file
+v skipped target penguins_df
+v skipped target body_mass_plot
+> dispatched target bill_scatterplot
+o completed target bill_scatterplot [0.35 seconds]
+v skipped target flipper_length_plot
+> ended pipeline [0.53 seconds]
+")
+```
+
+
+## Change in a step
+
+```{r tar-read-change-step}
+targets::tar_read(bill_scatterplot)
+```
+
+![](images/bill_scatterplot_set1.png){width=65% fig-align="center"}
+
+## Change in the data
+
+> *Hi Olivia,*
+>
+> *Oopsie! We realised there was a mistake in the original data file. Here is the updated spreadsheet, could you re-run the analysis with this version?*
+
+::: {.fragment}
+```{r tar-visnetwork-change-data}
+targets::tar_visnetwork()
+```
+
+![](images/tar_visnetwork_change_data.png){width=40% fig-align="center"}
+
+:::
+
+
+## Writing a report with Quarto
+
+:::: {.columns .v-center-container}
+
+::: {.column width="60%"}
+````{.markdown filename="reports/palmerpenguins_report.qmd"}
+---
+title: |
+  Analysis of penguins measurements from the 
+  palmerpenguins dataset
+author: "Olivia Angelin-Bonnet"
+date: today
+format:
+  docx:
+    number-sections: true
+---
+
+```{{r setup}}
+#| include: false
+
+library(knitr)
+opts_chunk$set(echo = FALSE)
+```
+
+This project aims at understanding the differences between
+the size of three species of penguins (Adelie, Chinstrap
+and Gentoo) observed in the Palmer Archipelago, Antarctica,
+using data collected by Dr Kristen Gorman between 2007 and
+2009.
+
+## Distribution of body mass and flipper length
+
+@fig-body-mass shows the distribution of body mass (in
+grams) across the three penguins species. We can see 
+that on average, the Gentoo penguins are the heaviest,
+with Adelie and Chinstrap penguins more similar in terms
+of body mass. Within a species, 
+the females are on average lighter than the males.
+
+```{{r fig-body-mass}}
+#| fig-cap: "Distribution of penguin body mass ..."
+
+# code for plot
+```
+
+Similarly, Gentoo penguins have the longest flippers on
+average (@fig-flipper-length), and Adelie penguins the
+shortest. Again, females from a species have shorter
+flippers on average than the males.
+
+
+```{{r fig-flipper-length}}
+#| fig-cap: "Distribution of penguin flipper length ..."
+
+# code for plot
+```
+
+````
+:::
+
+::: {.column width="45%"}
+\ 
+![](images/word_report.png){width=100% fig-align="center"}
+:::
+
+::::
+
+
+## Quarto + `{targets}`
+
+Two advantages of using a Quarto document alongside `{targets}`:
+
+::: {.incremental}
+- can read in results from targets pipeline inside the report $\rightarrow$ no computation done during report generation
+
+- can add the rendering of the report as a step in the pipeline $\rightarrow$ ensures that the report is always up-to-date
+:::
+
+## Quarto + `{targets}` {auto-animate=true}
+
+\ 
+
+:::: columns
+
+::: {.column width="50%"}
+Two steps to use the `{targets}` pipeline results in a Quarto document:
+:::
+
+::: {.column width="50%"}
+````{.markdown filename="reports/palmerpenguins_report.qmd"}
+```{{r setup}}
+#| include: false
+
+library(knitr)
+
+opts_chunk$set(echo = FALSE)
+```
+
+@fig-body-mass shows...
+
+```{{r fig-body-mass}}
+#| fig-cap: "Distribution ..."
+
+# code for plot
+```
+````
+:::
+
+::::
+
+## Quarto + `{targets}` {auto-animate=true}
+
+\ 
+
+:::: columns
+
+::: {.column width="50%"}
+Two steps to use the `{targets}` pipeline results in a Quarto document:
+
+- Make sure the report 'sees' the project root directory
+:::
+
+::: {.column width="50%"}
+````{.markdown filename="reports/palmerpenguins_report.qmd"}
+```{{r setup}}
+#| include: false
+
+library(knitr)
+library(here)
+
+opts_chunk$set(echo = FALSE)
+opts_knit$set(root.dir = here())
+```
+
+@fig-body-mass shows...
+
+```{{r fig-body-mass}}
+#| fig-cap: "Distribution ..."
+
+# code for plot
+```
+````
+:::
+
+::::
+
+## Quarto + `{targets}` {auto-animate=true}
+
+\ 
+
+:::: columns
+
+::: {.column width="50%"}
+Two steps to use the `{targets}` pipeline results in a Quarto document:
+
+- Make sure the report 'sees' the project root directory
+
+- Read targets objects with `targets::tar_read()`
+:::
+
+::: {.column width="50%"}
+````{.markdown filename="reports/palmerpenguins_report.qmd"}
+```{{r setup}}
+#| include: false
+
+library(knitr)
+library(here)
+library(targets)
+
+opts_chunk$set(echo = FALSE)
+opts_knit$set(root.dir = here())
+```
+
+@fig-body-mass shows...
+
+```{{r fig-body-mass}}
+#| fig-cap: "Distribution ..."
+
+tar_read(body_mass_plot)
+```
+````
+:::
+
+::::
+
+
+## Quarto + `{targets}`
+Adding the Quarto report as a step in the pipeline (need `{tarchetypes}` and `{quarto}` packages installed):
+
+```{r filename="analysis/_targets.R"}
+#| code-line-numbers: "|2,14-17"
+library(targets)
+library(tarchetypes)
+library(here)
+
+source(here("R/helper_functions.R"))
+
+list(
+  tar_target(
+    penguins_raw_file, 
+    here("data/penguins_raw.csv"), 
+    format = "file"
+  ),
+  # etc
+  tar_quarto(
+    report, 
+    here("reports/palmerpenguins_report.qmd")
+  )
+)
+```
+
+## Quarto + `{targets}`
+
+![](images/tar_visnetwork_quarto.png){width=90% fig-align="center"}
+
+# Thank you for your attention!
+
+[olivia.angelin-bonnet\@plantandfood.co.nz](mailto:olivia.angelin-bonnet@plantandfood.co.nz)
+
+## Presentation disclaimer {visibility="uncounted"}
+
+:::: columns
+
+::: {.column width="60%"}
+
+::: {style="font-size: 55%;"}
+
+**Presentation for**
+<br>Rladies Sydney, online, 7 April 2025
+
+**Publication data:**
+<br>Angelin-Bonnet O. April 2025. Reproducible analysis pipelines with `{targets}`. A Plant & Food Research presentation. SPTS No. XXXXX. 
+
+**Presentation prepared by:**
+<br>Olivia Angelin-Bonnet
+<br>Statistical cientist, Data Science
+<br>April 2025
+
+**Presentation approved by:**
+<br>Mark Wohlers
+<br>Science Group Leader, Data Science
+<br>April 2025
+
+**For more information contact:**
+<br>Olivia Angelin-Bonnet
+<br>DDI: +64 6 355 6156
+<br>Email: olivia.angelin-bonnet@plantandfood.co.nz
+:::
+
+\ 
+
+::: {style="font-size: 40%;"}
+This report has been prepared by The New Zealand Institute for Plant and Food Research Limited (Plant & Food Research).
+<br>Head Office: 120 Mt Albert Road, Sandringham, Auckland 1025, New Zealand, Tel: +64 9 925 7000, Fax: +64 9 925 7001.
+<br>www.plantandfood.co.nz
+:::
+:::
+
+::: {.column width="40%"}
+::: {style="background: #ECF0EF;"}
+::: {style="font-size: 40%; margin: 30px;"}
+\ 
+
+#### DISCLAIMER
+The New Zealand Institute for Plant and Food Research Limited does not give any prediction, warranty or assurance in relation to the accuracy of or fitness for any particular use or application of, any information or scientific or other result contained in this presentation. Neither The New Zealand Institute for Plant and Food Research Limited nor any of its employees, students, contractors, subcontractors or agents shall be liable for any cost (including legal costs), claim, liability, loss, damage, injury or the like, which may be suffered or incurred as a direct or indirect result of the reliance by any person on any information contained in this presentation.
+
+#### COPYRIGHT
+© COPYRIGHT (2025) The New Zealand Institute for Plant and Food Research Limited. All Rights Reserved. No part of this report may be reproduced, stored in a retrieval system, transmitted, reported, or copied in any form or by any means electronic, mechanical or otherwise, without the prior written permission of The New Zealand Institute for Plant and Food Research Limited. Information contained in this report is confidential and is not to be disclosed in any form to any party without the prior approval in writing of The New Zealand Institute for Plant and Food Research Limited. To request permission, write to: The Science Publication Office, The New Zealand Institute for Plant and Food Research Limited – Postal Address: Private Bag 92169, Victoria Street West, Auckland 1142, New Zealand; Email: [SPO-Team@plantandfood.co.nz](mailto:SPO-Team@plantandfood.co.nz).
+
+\ 
+
+:::
+:::
+:::
+
+::::
