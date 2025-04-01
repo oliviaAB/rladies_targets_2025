@@ -56,14 +56,14 @@ library(ggplot2)
 :::: {.columns .v-center-container}
 
 ::: {.column width="55%"}
-![Location of Le Pont-de-Beauvoisin on a map of France](images/map_france.png){fig-align="center"}
+![Location of Le Pont-de-Beauvoisin on a map of France](images/map_france.png){fig-align="center" class="shadow"}
 
 :::
 
 ::: {.column width="45%"}
 
 ::: {.fragment}
-![Location of Palmerston North on a map of New Zealand](images/map_nz.png){fig-align="center"}
+![Location of Palmerston North on a map of New Zealand](images/map_nz.png){fig-align="center" class="shadow"}
 :::
 :::
 
@@ -179,7 +179,7 @@ Solution: Turn your scripts into pipelines with `{targets}`!
 
 ## To go further
 
-![<https://books.ropensci.org/targets/>](images/targets_manual_coloured.png)
+![<https://books.ropensci.org/targets/>](images/targets_manual.png){class="shadow"}
 
 
 ## Aside -- more about setting up R projects
@@ -187,7 +187,7 @@ Solution: Turn your scripts into pipelines with `{targets}`!
 - previous talk: "Setting up a reproducible data analysis project in R--featuring GitHub, `{renv}`, `{targets}` and more"
 - see the [slides](https://nzsa-ecssn-2024-seminar-slides.netlify.app/),  [recording](https://youtu.be/DTpcGgdL-cc), or [blog post](https://olivia-angelin-bonnet.netlify.app/blog/2024-08-20-setting-up-r-project/) :relaxed:
 
-![](images/previous_talk_content_coloured.png){fig-align="center" width=60%}
+![](images/previous_talk_content.png){fig-align="center" width=60% class="shadow"}
 
 # Let's code!
 
@@ -732,7 +732,7 @@ flippers on average than the males.
 
 ::: {.column width="45%"}
 \ 
-![](images/word_report_coloured.png){width=100% fig-align="center"}
+![](images/word_report.png){width=100% fig-align="center" class="shadow"}
 :::
 
 ::::
