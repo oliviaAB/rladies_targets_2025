@@ -75,6 +75,8 @@ library(ggplot2)
 
 Statistical scientist at Plant & Food Research, working on omics analyses and multi-omics integration
 
+::: {.fragment}
+
 ::: columns
 ::: {.column width="33%"}
 <p style="text-align: center;"><b>Multivariate analyses</b></p>
@@ -93,6 +95,8 @@ Statistical scientist at Plant & Food Research, working on omics analyses and mu
 
 ![](images/r_packages.png){fig-align="center" height=340px} 
 :::
+:::
+
 :::
 
 ## Developing complex analyses in R
@@ -468,42 +472,6 @@ list(
 )
 ```
 
-
-## Step 2: Turn your main script into a `{targets}` pipeline!
-
-Aside: where should my targets script live?
-
-::: {.incremental}
-- default would be in the `_targets.R` file in the main directory
-
-- to choose a custom folder and file name, need to specify targets configuration:
-:::
-
-::: {.fragment}
-
-In the console, run (from main directory):
-
-```{r tar-config-set}
-targets::tar_config_set(script = "analysis/_targets.R", store = "analysis/_targets")
-```
-
-:::
-
-::: {.fragment}
-
-Will create a `_targets.yaml` file:
-
-```{txt filename="_target.yaml"}
-main:
-  script: analysis/_targets.R
-  store: analysis/_targets
-```
-
-<br>
-
-:::
-
-
 ## Visualise your pipeline
 
 In the console, run:
@@ -559,6 +527,38 @@ targets::tar_read(bill_scatterplot)
 ::: {.fragment}
 ![](images/bill_scatterplot.png){width=65% fig-align="center"}
 :::
+
+## After executing the pipeline
+
+```{r tar-visnetwork-up-to-date}
+targets::tar_visnetwork()
+```
+
+
+![](images/tar_visnetwork_all_up_to_date.png){width=60% fig-align="center"}
+
+## After executing the pipeline
+
+```{r tar-make-up-to-date}
+targets::tar_make()
+```
+
+```{r tar-make-results-up-to-date}
+#| echo: false
+#| eval: true
+#| message: true
+
+message("
+here() starts at C:/Users/HRPOAB/Desktop/GitHub/palmerpenguins_analysis
+v skipped target penguins_raw_file
+v skipped target penguins_df
+v skipped target body_mass_plot
+v skipped target bill_scatterplot
+v skipped target flipper_length_plot
+v skipped pipeline [0.1 seconds]
+")
+```
+
 
 ## Change in a step {auto-animate=true}
 
@@ -666,6 +666,38 @@ targets::tar_visnetwork()
 ```
 
 ![](images/tar_visnetwork_change_data.png){width=40% fig-align="center"}
+
+:::
+
+## Aside: where should my targets script live?
+
+::: {.incremental}
+- default would be in the `_targets.R` file in the main directory
+
+- to choose a custom folder and file name, need to specify targets configuration:
+:::
+
+::: {.fragment}
+
+In the console, run (from main directory):
+
+```{r tar-config-set}
+targets::tar_config_set(script = "analysis/_targets.R", store = "analysis/_targets")
+```
+
+:::
+
+::: {.fragment}
+
+Will create a `_targets.yaml` file:
+
+```{txt filename="_target.yaml"}
+main:
+  script: analysis/_targets.R
+  store: analysis/_targets
+```
+
+<br>
 
 :::
 
@@ -860,6 +892,10 @@ tar_read(body_mass_plot)
 Adding the Quarto report as a step in the pipeline (need `{tarchetypes}` and `{quarto}` packages installed):
 
 ```{r filename="analysis/_targets.R"}
+library(targets)
+
+# ...
+
 list(
   tar_target(penguins_raw_file, here("data/penguins_raw.csv"), format = "file"),
   
@@ -878,6 +914,11 @@ list(
 Adding the Quarto report as a step in the pipeline (need `{tarchetypes}` and `{quarto}` packages installed):
 
 ```{r filename="analysis/_targets.R"}
+library(targets)
+library(tarchetypes)
+
+# ...
+
 list(
   tar_target(penguins_raw_file, here("data/penguins_raw.csv"), format = "file"),
   
@@ -903,11 +944,11 @@ list(
 
 - The [blog post](https://olivia-angelin-bonnet.netlify.app/blog/2024-08-20-setting-up-r-project/) version of this talk :smile:
 
-- The [targets user manual manual](https://books.ropensci.org/targets/)
-
--   Bruno Rodrigues' book, [Building reproducible analytical pipelines with R](https://raps-with-r.dev/)
+- The [targets user manual](https://books.ropensci.org/targets/)
 
 - The Carpentries Incubator's [Introduction to targets](https://carpentries-incubator.github.io/targets-workshop/index.html) workshop
+
+-   Bruno Rodrigues' book, [Building reproducible analytical pipelines with R](https://raps-with-r.dev/)
 
 # Thank you for your attention!
 
