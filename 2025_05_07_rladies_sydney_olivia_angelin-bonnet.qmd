@@ -1,5 +1,6 @@
 ---
 title: "Reproducible analysis pipelines with `{targets}`"
+subtitle: "Rladies Sydney"
 institute: "The New Zealand Institute for Plant and Food Research Ltd"
 author: "Olivia Angelin-Bonnet"
 date: "07 April 2025"
